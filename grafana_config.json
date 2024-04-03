@@ -1,0 +1,653 @@
+{
+  "annotations": {
+    "list": [
+      {
+        "builtIn": 1,
+        "datasource": {
+          "type": "grafana",
+          "uid": "-- Grafana --"
+        },
+        "enable": true,
+        "hide": true,
+        "iconColor": "rgba(0, 211, 255, 1)",
+        "name": "Annotations & Alerts",
+        "type": "dashboard"
+      }
+    ]
+  },
+  "editable": true,
+  "fiscalYearStartMonth": 0,
+  "graphTooltip": 0,
+  "id": 1,
+  "links": [],
+  "panels": [
+    {
+      "datasource": {
+        "type": "frser-sqlite-datasource",
+        "uid": "bdhbb3s2sx91cc"
+      },
+      "description": "",
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "palette-classic"
+          },
+          "custom": {
+            "axisBorderShow": false,
+            "axisCenteredZero": false,
+            "axisColorMode": "text",
+            "axisLabel": "",
+            "axisPlacement": "auto",
+            "fillOpacity": 80,
+            "gradientMode": "none",
+            "hideFrom": {
+              "legend": false,
+              "tooltip": false,
+              "viz": false
+            },
+            "lineWidth": 1,
+            "scaleDistribution": {
+              "type": "linear"
+            },
+            "thresholdsStyle": {
+              "mode": "off"
+            }
+          },
+          "mappings": [],
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "green",
+                "value": null
+              },
+              {
+                "color": "red",
+                "value": 80
+              }
+            ]
+          }
+        },
+        "overrides": []
+      },
+      "gridPos": {
+        "h": 10,
+        "w": 12,
+        "x": 0,
+        "y": 0
+      },
+      "id": 2,
+      "options": {
+        "barRadius": 0,
+        "barWidth": 0.97,
+        "fullHighlight": false,
+        "groupWidth": 0.7,
+        "legend": {
+          "calcs": [],
+          "displayMode": "list",
+          "placement": "bottom",
+          "showLegend": true
+        },
+        "orientation": "auto",
+        "showValue": "auto",
+        "stacking": "none",
+        "tooltip": {
+          "mode": "single",
+          "sort": "none"
+        },
+        "xField": "emote",
+        "xTickLabelRotation": 0,
+        "xTickLabelSpacing": 0
+      },
+      "pluginVersion": "10.4.1",
+      "targets": [
+        {
+          "datasource": {
+            "type": "frser-sqlite-datasource",
+            "uid": "bdhbb3s2sx91cc"
+          },
+          "queryText": "WITH raw_usage as (\n  select\n  cast(strftime('%s', date(message.message_date, 'start of month')) as int) as time,\n  emote.rowid as emote_row_id,\n  num\n  FROM usage JOIN message USING(discord_id) JOIN emote ON(usage.emote_id = emote.rowid)\n),\nraw_reacts as (\n  select\n  cast(strftime('%s', date(message.message_date, 'start of month')) as int) as time,\n  emote.rowid as emote_row_id\n  FROM react JOIN message USING(discord_id) JOIN emote ON(react.emote_id = emote.rowid)\n),\nsum_usage as (\n\tselect time, emote_row_id, 'message' as type, SUM(num) as cnt from raw_usage\n\tgroup by time, emote_row_id\n),\nsum_react as (\n\tselect time, emote_row_id, 'react' as type, COUNT(1) as cnt from raw_reacts\n\tgroup by time, emote_row_id\n),\ntotal_both as (\n\tselect emote_row_id, SUM(cnt) as cnt, type from sum_react group by emote_row_id\n\tUNION ALL\n    select emote_row_id, SUM(cnt) as cnt, type from sum_usage group by emote_row_id\n)\nselect emote.emote, r.cnt as react_count, u.cnt as message_count\nfrom emote JOIN (select * from total_both where type = 'react') r\nON emote.rowid = r.emote_row_id\nJOIN (select * from total_both where type = 'message') u\nON emote.rowid = u.emote_row_id\nORDER BY react_count + message_count DESC\nLIMIT 12;",
+          "queryType": "table",
+          "rawQueryText": "WITH raw_usage as (\n  select\n  cast(strftime('%s', date(message.message_date, 'start of month')) as int) as time,\n  emote.rowid as emote_row_id,\n  num\n  FROM usage JOIN message USING(discord_id) JOIN emote ON(usage.emote_id = emote.rowid)\n),\nraw_reacts as (\n  select\n  cast(strftime('%s', date(message.message_date, 'start of month')) as int) as time,\n  emote.rowid as emote_row_id\n  FROM react JOIN message USING(discord_id) JOIN emote ON(react.emote_id = emote.rowid)\n),\nsum_usage as (\n\tselect time, emote_row_id, 'message' as type, SUM(num) as cnt from raw_usage\n\tgroup by time, emote_row_id\n),\nsum_react as (\n\tselect time, emote_row_id, 'react' as type, COUNT(1) as cnt from raw_reacts\n\tgroup by time, emote_row_id\n),\ntotal_both as (\n\tselect emote_row_id, SUM(cnt) as cnt, type from sum_react group by emote_row_id\n\tUNION ALL\n    select emote_row_id, SUM(cnt) as cnt, type from sum_usage group by emote_row_id\n)\nselect emote.emote, r.cnt as react_count, u.cnt as message_count\nfrom emote JOIN (select * from total_both where type = 'react') r\nON emote.rowid = r.emote_row_id\nJOIN (select * from total_both where type = 'message') u\nON emote.rowid = u.emote_row_id\nORDER BY react_count + message_count DESC\nLIMIT 12;",
+          "refId": "A",
+          "timeColumns": [
+            "time",
+            "ts"
+          ]
+        }
+      ],
+      "title": "Top reactions + messages, all time",
+      "type": "barchart"
+    },
+    {
+      "datasource": {
+        "type": "frser-sqlite-datasource",
+        "uid": "bdhbb3s2sx91cc"
+      },
+      "description": "",
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "thresholds"
+          },
+          "custom": {
+            "align": "auto",
+            "cellOptions": {
+              "type": "auto"
+            },
+            "inspect": false
+          },
+          "mappings": [],
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "green",
+                "value": null
+              },
+              {
+                "color": "red",
+                "value": 80
+              }
+            ]
+          }
+        },
+        "overrides": [
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "img"
+            },
+            "properties": [
+              {
+                "id": "custom.cellOptions",
+                "value": {
+                  "type": "image"
+                }
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "percent"
+            },
+            "properties": [
+              {
+                "id": "decimals",
+                "value": 1
+              },
+              {
+                "id": "unit",
+                "value": "percentunit"
+              }
+            ]
+          }
+        ]
+      },
+      "gridPos": {
+        "h": 10,
+        "w": 12,
+        "x": 12,
+        "y": 0
+      },
+      "id": 6,
+      "options": {
+        "cellHeight": "sm",
+        "footer": {
+          "countRows": false,
+          "fields": "",
+          "reducer": [
+            "sum"
+          ],
+          "show": false
+        },
+        "showHeader": true
+      },
+      "pluginVersion": "10.4.1",
+      "targets": [
+        {
+          "datasource": {
+            "type": "frser-sqlite-datasource",
+            "uid": "bdhbb3s2sx91cc"
+          },
+          "queryText": "\n--- least used past month\nWITH active_emotes as (\n  select emote_id as rowid from guild_emotes\n  where guild_id = 1083238120645992458\n),\nraw_reacts as (\n  select\n  cast(strftime('%s', date(message.message_date, 'start of month')) as int) as time,\n  emote.rowid as emote_row_id,\n  react.user_id\n  FROM react JOIN message USING(discord_id) JOIN emote ON(react.emote_id = emote.rowid)\n),\ntotal_reacts as (\n  select emote_row_id, COUNT(1) as cnt from raw_reacts\n\tgroup by emote_row_id\n  having  count(1) > 20\n),\nreact_by_user as (\n\tselect emote_row_id, user_id,\n  row_number() over (partition by emote_row_id order by count(1) desc) rown,\n  COUNT(1) as cnt from (select * from raw_reacts where emote_row_id in (select emote_row_id from total_reacts)) r\n\tgroup by emote_row_id, user_id\n)\nselect emote.emote as emote,\n\"data:image/png;base64,\" || emote.base64_encoded_image as img,\nuser.username,\ncoalesce(r.cnt, 0) as react_count,\nt.cnt as total_count,\ncast(r.cnt as float) / cast(t.cnt as float)  as percent\nfrom emote\nJOIN react_by_user r\nON emote.rowid = r.emote_row_id\nJOIN user ON user.user_id = r.user_id\nJOIN total_reacts t ON r.emote_row_id = t.emote_row_id\nWHERE emote.rowid in active_emotes\nAND r.rown = 1\nORDER BY react_count DESC\nLIMIT 100;\n\n",
+          "queryType": "table",
+          "rawQueryText": "\n--- least used past month\nWITH active_emotes as (\n  select emote_id as rowid from guild_emotes\n  where guild_id = 1083238120645992458\n),\nraw_reacts as (\n  select\n  cast(strftime('%s', date(message.message_date, 'start of month')) as int) as time,\n  emote.rowid as emote_row_id,\n  react.user_id\n  FROM react JOIN message USING(discord_id) JOIN emote ON(react.emote_id = emote.rowid)\n),\ntotal_reacts as (\n  select emote_row_id, COUNT(1) as cnt from raw_reacts\n\tgroup by emote_row_id\n  having  count(1) > 20\n),\nreact_by_user as (\n\tselect emote_row_id, user_id,\n  row_number() over (partition by emote_row_id order by count(1) desc) rown,\n  COUNT(1) as cnt from (select * from raw_reacts where emote_row_id in (select emote_row_id from total_reacts)) r\n\tgroup by emote_row_id, user_id\n)\nselect emote.emote as emote,\n\"data:image/png;base64,\" || emote.base64_encoded_image as img,\nuser.username,\ncoalesce(r.cnt, 0) as react_count,\nt.cnt as total_count,\ncast(r.cnt as float) / cast(t.cnt as float)  as percent\nfrom emote\nJOIN react_by_user r\nON emote.rowid = r.emote_row_id\nJOIN user ON user.user_id = r.user_id\nJOIN total_reacts t ON r.emote_row_id = t.emote_row_id\nWHERE emote.rowid in active_emotes\nAND r.rown = 1\nORDER BY react_count DESC\nLIMIT 100;\n\n",
+          "refId": "A",
+          "timeColumns": [
+            "time",
+            "ts"
+          ]
+        }
+      ],
+      "title": "Top reacting users by emote",
+      "type": "table"
+    },
+    {
+      "datasource": {
+        "type": "frser-sqlite-datasource",
+        "uid": "bdhbb3s2sx91cc"
+      },
+      "description": "",
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "palette-classic"
+          },
+          "custom": {
+            "axisBorderShow": false,
+            "axisCenteredZero": false,
+            "axisColorMode": "text",
+            "axisLabel": "",
+            "axisPlacement": "auto",
+            "barAlignment": 0,
+            "drawStyle": "line",
+            "fillOpacity": 0,
+            "gradientMode": "none",
+            "hideFrom": {
+              "legend": false,
+              "tooltip": false,
+              "viz": false
+            },
+            "insertNulls": false,
+            "lineInterpolation": "linear",
+            "lineWidth": 1,
+            "pointSize": 5,
+            "scaleDistribution": {
+              "type": "linear"
+            },
+            "showPoints": "auto",
+            "spanNulls": false,
+            "stacking": {
+              "group": "A",
+              "mode": "none"
+            },
+            "thresholdsStyle": {
+              "mode": "off"
+            }
+          },
+          "mappings": [],
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "green",
+                "value": null
+              },
+              {
+                "color": "red",
+                "value": 80
+              }
+            ]
+          }
+        },
+        "overrides": []
+      },
+      "gridPos": {
+        "h": 10,
+        "w": 24,
+        "x": 0,
+        "y": 10
+      },
+      "id": 3,
+      "options": {
+        "legend": {
+          "calcs": [
+            "max"
+          ],
+          "displayMode": "table",
+          "placement": "right",
+          "showLegend": true,
+          "sortBy": "Max",
+          "sortDesc": true
+        },
+        "tooltip": {
+          "mode": "single",
+          "sort": "none"
+        }
+      },
+      "pluginVersion": "10.4.1",
+      "targets": [
+        {
+          "datasource": {
+            "type": "frser-sqlite-datasource",
+            "uid": "bdhbb3s2sx91cc"
+          },
+          "queryText": "WITH active_emotes as (\n\tselect emote_id from guild_emotes\n\twhere guild_id = 1083238120645992458\n\t),\n raw_reacts as (\n  select\n  cast(strftime('%s', date(message.message_date, 'start of month')) as int) as time,\n  active_emotes.emote_id as emote_row_id\n  FROM react JOIN message USING(discord_id) JOIN active_emotes ON react.emote_id = active_emotes.emote_id\n),\nemote_rank_by_month as (\n  select time, emote_row_id, \n  row_number() over (partition by time order by COUNT(1) desc) rown,\n  COUNT(1) as cnt\n  from raw_reacts\n  GROUP BY time, emote_row_id\n),\nmax_emote_usage as (\n  select emote_row_id, max(cnt) as max_cnt from emote_rank_by_month\n  group by emote_row_id\n),\nactive_to_max as (\n  select emote_id, max_cnt from active_emotes JOIN max_emote_usage ON emote_id = emote_row_id\n),\ncross_product as (\n  select r.time, e.rowid from \n  (select time from emote_rank_by_month group by time) r\n  CROSS JOIN (select emote_id as rowid from active_to_max where max_cnt > 100 ) e\n),\nemote_rank_by_month_full as (\n  select c.time, c.rowid as emote_row_id, e.rown, COALESCE(e.cnt, 0) as cnt \n  FROM cross_product c\n  FULL JOIN emote_rank_by_month e\n  ON c.time = e.time AND  e.emote_row_id = c.rowid\n),\nemotes_ever_in_top_5 as (\n  select distinct emote_row_id\n  from emote_rank_by_month JOIN emote ON emote.rowid = emote_row_id\n  where rown <= 7\n  AND emote.discord_id IS NOT NULL\n)\nselect time, emote.emote, cnt as `#`\nfrom emote_rank_by_month_full JOIN emote\nON emote_rank_by_month_full.emote_row_id = emote.rowid\nwhere emote_row_id IN emotes_ever_in_top_5;\n",
+          "queryType": "table",
+          "rawQueryText": "WITH active_emotes as (\n\tselect emote_id from guild_emotes\n\twhere guild_id = 1083238120645992458\n\t),\n raw_reacts as (\n  select\n  cast(strftime('%s', date(message.message_date, 'start of month')) as int) as time,\n  active_emotes.emote_id as emote_row_id\n  FROM react JOIN message USING(discord_id) JOIN active_emotes ON react.emote_id = active_emotes.emote_id\n),\nemote_rank_by_month as (\n  select time, emote_row_id, \n  row_number() over (partition by time order by COUNT(1) desc) rown,\n  COUNT(1) as cnt\n  from raw_reacts\n  GROUP BY time, emote_row_id\n),\nmax_emote_usage as (\n  select emote_row_id, max(cnt) as max_cnt from emote_rank_by_month\n  group by emote_row_id\n),\nactive_to_max as (\n  select emote_id, max_cnt from active_emotes JOIN max_emote_usage ON emote_id = emote_row_id\n),\ncross_product as (\n  select r.time, e.rowid from \n  (select time from emote_rank_by_month group by time) r\n  CROSS JOIN (select emote_id as rowid from active_to_max where max_cnt > 100 ) e\n),\nemote_rank_by_month_full as (\n  select c.time, c.rowid as emote_row_id, e.rown, COALESCE(e.cnt, 0) as cnt \n  FROM cross_product c\n  FULL JOIN emote_rank_by_month e\n  ON c.time = e.time AND  e.emote_row_id = c.rowid\n),\nemotes_ever_in_top_5 as (\n  select distinct emote_row_id\n  from emote_rank_by_month JOIN emote ON emote.rowid = emote_row_id\n  where rown <= 7\n  AND emote.discord_id IS NOT NULL\n)\nselect time, emote.emote, cnt as `#`\nfrom emote_rank_by_month_full JOIN emote\nON emote_rank_by_month_full.emote_row_id = emote.rowid\nwhere emote_row_id IN emotes_ever_in_top_5;\n",
+          "refId": "A",
+          "timeColumns": [
+            "time",
+            "ts"
+          ]
+        }
+      ],
+      "title": "Top reactions by month",
+      "transformations": [
+        {
+          "id": "prepareTimeSeries",
+          "options": {
+            "format": "multi"
+          }
+        }
+      ],
+      "type": "timeseries"
+    },
+    {
+      "datasource": {
+        "type": "frser-sqlite-datasource",
+        "uid": "bdhbb3s2sx91cc"
+      },
+      "description": "",
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "palette-classic"
+          },
+          "custom": {
+            "axisBorderShow": false,
+            "axisCenteredZero": false,
+            "axisColorMode": "text",
+            "axisLabel": "",
+            "axisPlacement": "auto",
+            "barAlignment": 0,
+            "drawStyle": "line",
+            "fillOpacity": 0,
+            "gradientMode": "none",
+            "hideFrom": {
+              "legend": false,
+              "tooltip": false,
+              "viz": false
+            },
+            "insertNulls": false,
+            "lineInterpolation": "linear",
+            "lineWidth": 1,
+            "pointSize": 5,
+            "scaleDistribution": {
+              "type": "linear"
+            },
+            "showPoints": "auto",
+            "spanNulls": false,
+            "stacking": {
+              "group": "A",
+              "mode": "none"
+            },
+            "thresholdsStyle": {
+              "mode": "off"
+            }
+          },
+          "mappings": [],
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "green",
+                "value": null
+              },
+              {
+                "color": "red",
+                "value": 80
+              }
+            ]
+          }
+        },
+        "overrides": []
+      },
+      "gridPos": {
+        "h": 10,
+        "w": 24,
+        "x": 0,
+        "y": 20
+      },
+      "id": 1,
+      "options": {
+        "legend": {
+          "calcs": [
+            "max"
+          ],
+          "displayMode": "table",
+          "placement": "right",
+          "showLegend": true,
+          "sortBy": "Max",
+          "sortDesc": true
+        },
+        "tooltip": {
+          "mode": "single",
+          "sort": "none"
+        }
+      },
+      "pluginVersion": "10.4.1",
+      "targets": [
+        {
+          "datasource": {
+            "type": "frser-sqlite-datasource",
+            "uid": "bdhbb3s2sx91cc"
+          },
+          "queryText": "WITH \nactive_emotes as (\n\tselect emote_id from guild_emotes\n\twhere guild_id = 1083238120645992458\n\t),\nraw_usage as (\n  select\n  cast(strftime('%s', date(message.message_date, 'start of month')) as int) as time,\n  active_emotes.emote_id as emote_row_id,\n  num\n  FROM usage JOIN message USING(discord_id) JOIN active_emotes ON usage.emote_id = active_emotes.emote_id\n),\nemote_rank_by_month as (\n  select time, emote_row_id, \n  row_number() over (partition by time order by COUNT(1) desc) rown,\n  SUM(num) as cnt\n  from raw_usage\n  GROUP BY time, emote_row_id\n),\nmax_emote_usage as (\n  select emote_row_id, max(cnt) as max_cnt from emote_rank_by_month\n  group by emote_row_id\n),\nactive_to_max as (\n  select emote_id, max_cnt from active_emotes JOIN max_emote_usage ON emote_id = emote_row_id\n),\ncross_product as (\n  select r.time, e.rowid from \n  (select time from emote_rank_by_month group by time) r\n  CROSS JOIN (select emote_id as rowid from active_to_max where max_cnt > 100 ) e\n),\nemote_rank_by_month_full as (\n  select c.time, c.rowid as emote_row_id, e.rown, COALESCE(e.cnt, 0) as cnt \n  FROM cross_product c\n  FULL JOIN emote_rank_by_month e\n  ON c.time = e.time AND  e.emote_row_id = c.rowid\n),\nemotes_ever_in_top_5 as (\n  select distinct emote_row_id\n  from emote_rank_by_month JOIN emote ON emote.rowid = emote_row_id\n  where rown <= 5\n  AND emote.discord_id IS NOT NULL \n  AND cnt > 10\n)\nselect time, emote.emote, cnt as `#`\nfrom emote_rank_by_month_full JOIN emote\nON emote_rank_by_month_full.emote_row_id = emote.rowid\nwhere emote_row_id IN emotes_ever_in_top_5;",
+          "queryType": "table",
+          "rawQueryText": "WITH \nactive_emotes as (\n\tselect emote_id from guild_emotes\n\twhere guild_id = 1083238120645992458\n\t),\nraw_usage as (\n  select\n  cast(strftime('%s', date(message.message_date, 'start of month')) as int) as time,\n  active_emotes.emote_id as emote_row_id,\n  num\n  FROM usage JOIN message USING(discord_id) JOIN active_emotes ON usage.emote_id = active_emotes.emote_id\n),\nemote_rank_by_month as (\n  select time, emote_row_id, \n  row_number() over (partition by time order by COUNT(1) desc) rown,\n  SUM(num) as cnt\n  from raw_usage\n  GROUP BY time, emote_row_id\n),\nmax_emote_usage as (\n  select emote_row_id, max(cnt) as max_cnt from emote_rank_by_month\n  group by emote_row_id\n),\nactive_to_max as (\n  select emote_id, max_cnt from active_emotes JOIN max_emote_usage ON emote_id = emote_row_id\n),\ncross_product as (\n  select r.time, e.rowid from \n  (select time from emote_rank_by_month group by time) r\n  CROSS JOIN (select emote_id as rowid from active_to_max where max_cnt > 100 ) e\n),\nemote_rank_by_month_full as (\n  select c.time, c.rowid as emote_row_id, e.rown, COALESCE(e.cnt, 0) as cnt \n  FROM cross_product c\n  FULL JOIN emote_rank_by_month e\n  ON c.time = e.time AND  e.emote_row_id = c.rowid\n),\nemotes_ever_in_top_5 as (\n  select distinct emote_row_id\n  from emote_rank_by_month JOIN emote ON emote.rowid = emote_row_id\n  where rown <= 5\n  AND emote.discord_id IS NOT NULL \n  AND cnt > 10\n)\nselect time, emote.emote, cnt as `#`\nfrom emote_rank_by_month_full JOIN emote\nON emote_rank_by_month_full.emote_row_id = emote.rowid\nwhere emote_row_id IN emotes_ever_in_top_5;",
+          "refId": "A",
+          "timeColumns": [
+            "time",
+            "ts"
+          ]
+        }
+      ],
+      "title": "Top emoji messages by month",
+      "transformations": [
+        {
+          "id": "prepareTimeSeries",
+          "options": {
+            "format": "multi"
+          }
+        }
+      ],
+      "type": "timeseries"
+    },
+    {
+      "datasource": {
+        "type": "frser-sqlite-datasource",
+        "uid": "bdhbb3s2sx91cc"
+      },
+      "description": "",
+      "fieldConfig": {
+        "defaults": {
+          "custom": {
+            "align": "auto",
+            "cellOptions": {
+              "type": "auto"
+            },
+            "inspect": false
+          },
+          "mappings": [],
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "green"
+              },
+              {
+                "color": "red",
+                "value": 80
+              }
+            ]
+          }
+        },
+        "overrides": [
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "img"
+            },
+            "properties": [
+              {
+                "id": "custom.cellOptions",
+                "value": {
+                  "type": "image"
+                }
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "last_used"
+            },
+            "properties": [
+              {
+                "id": "custom.cellOptions",
+                "value": {
+                  "type": "auto"
+                }
+              }
+            ]
+          }
+        ]
+      },
+      "gridPos": {
+        "h": 11,
+        "w": 12,
+        "x": 0,
+        "y": 30
+      },
+      "id": 4,
+      "options": {
+        "cellHeight": "sm",
+        "footer": {
+          "countRows": false,
+          "fields": "",
+          "reducer": [
+            "sum"
+          ],
+          "show": false
+        },
+        "showHeader": true
+      },
+      "pluginVersion": "10.4.1",
+      "targets": [
+        {
+          "datasource": {
+            "type": "frser-sqlite-datasource",
+            "uid": "bdhbb3s2sx91cc"
+          },
+          "queryText": "WITH active_emotes as (\nselect emote_id as rowid from guild_emotes\nwhere guild_id = 1083238120645992458\n),\nraw_usage as (\n  select\n  message.message_date,\n  emote.rowid as emote_row_id,\n  num\n  FROM usage JOIN message USING(discord_id) JOIN emote ON(usage.emote_id = emote.rowid)\n),\nraw_reacts as (\n  select\n  message.message_date,\n  emote.rowid as emote_row_id\n  FROM react JOIN message USING(discord_id) JOIN emote ON(react.emote_id = emote.rowid)\n),\nlast_used_time as (\n\tselect emote.rowid as emote_row_id, max(\n    COALESCE(r.message_date, datetime('1990-01-01 00:00:00')),\n    COALESCE(u.message_date, datetime('1990-01-01 00:00:00'))) as last_used from \n\temote\n\tFULL JOIN (select emote_row_id, max(message_date) as message_date from raw_reacts group by emote_row_id) r\n\tON emote.rowid = r.emote_row_id\n\tFULL JOIN (select emote_row_id, max(message_date) as message_date from raw_usage group by emote_row_id) u\n\tON emote.rowid = u.emote_row_id\n\tgroup by emote.rowid\n)\nselect emote.emote, \n\"data:image/png;base64,\" || emote.base64_encoded_image as img,\nlast_used,\ncast(julianday('now') - julianday(last_used) as integer) as days_since_last_used\nfrom last_used_time\nJOIN emote ON emote.rowid = last_used_time.emote_row_id\nwhere  emote_row_id in active_emotes\norder by last_used ASC\nLIMIT 100;",
+          "queryType": "table",
+          "rawQueryText": "WITH active_emotes as (\nselect emote_id as rowid from guild_emotes\nwhere guild_id = 1083238120645992458\n),\nraw_usage as (\n  select\n  message.message_date,\n  emote.rowid as emote_row_id,\n  num\n  FROM usage JOIN message USING(discord_id) JOIN emote ON(usage.emote_id = emote.rowid)\n),\nraw_reacts as (\n  select\n  message.message_date,\n  emote.rowid as emote_row_id\n  FROM react JOIN message USING(discord_id) JOIN emote ON(react.emote_id = emote.rowid)\n),\nlast_used_time as (\n\tselect emote.rowid as emote_row_id, max(\n    COALESCE(r.message_date, datetime('1990-01-01 00:00:00')),\n    COALESCE(u.message_date, datetime('1990-01-01 00:00:00'))) as last_used from \n\temote\n\tFULL JOIN (select emote_row_id, max(message_date) as message_date from raw_reacts group by emote_row_id) r\n\tON emote.rowid = r.emote_row_id\n\tFULL JOIN (select emote_row_id, max(message_date) as message_date from raw_usage group by emote_row_id) u\n\tON emote.rowid = u.emote_row_id\n\tgroup by emote.rowid\n)\nselect emote.emote, \n\"data:image/png;base64,\" || emote.base64_encoded_image as img,\nlast_used,\ncast(julianday('now') - julianday(last_used) as integer) as days_since_last_used\nfrom last_used_time\nJOIN emote ON emote.rowid = last_used_time.emote_row_id\nwhere  emote_row_id in active_emotes\norder by last_used ASC\nLIMIT 100;",
+          "refId": "A",
+          "timeColumns": [
+            "time",
+            "ts"
+          ]
+        }
+      ],
+      "title": "Longest time since last usage",
+      "type": "table"
+    },
+    {
+      "datasource": {
+        "type": "frser-sqlite-datasource",
+        "uid": "bdhbb3s2sx91cc"
+      },
+      "description": "",
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "thresholds"
+          },
+          "custom": {
+            "align": "auto",
+            "cellOptions": {
+              "type": "auto"
+            },
+            "inspect": false
+          },
+          "mappings": [],
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "green"
+              },
+              {
+                "color": "red",
+                "value": 80
+              }
+            ]
+          }
+        },
+        "overrides": [
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "img"
+            },
+            "properties": [
+              {
+                "id": "custom.cellOptions",
+                "value": {
+                  "type": "image"
+                }
+              }
+            ]
+          }
+        ]
+      },
+      "gridPos": {
+        "h": 11,
+        "w": 12,
+        "x": 12,
+        "y": 30
+      },
+      "id": 5,
+      "options": {
+        "cellHeight": "sm",
+        "footer": {
+          "countRows": false,
+          "fields": "",
+          "reducer": [
+            "sum"
+          ],
+          "show": false
+        },
+        "showHeader": true
+      },
+      "pluginVersion": "10.4.1",
+      "targets": [
+        {
+          "datasource": {
+            "type": "frser-sqlite-datasource",
+            "uid": "bdhbb3s2sx91cc"
+          },
+          "queryText": "\n--- least used past month\nWITH active_emotes as (\n  select emote_id as rowid from guild_emotes\n  where guild_id = 1083238120645992458\n),\nmax_time as (\n\tselect max(cast(strftime('%s', date(message.message_date, 'start of month')) as int)) as time from message \n),\nraw_usage as (\n  select\n  cast(strftime('%s', date(message.message_date, 'start of month')) as int) as time,\n  emote.rowid as emote_row_id,\n  num\n  FROM usage JOIN message USING(discord_id) JOIN emote ON(usage.emote_id = emote.rowid)\n  WHERE time = (select time from max_time LIMIT 1)\n),\nraw_reacts as (\n  select\n  cast(strftime('%s', date(message.message_date, 'start of month')) as int) as time,\n  emote.rowid as emote_row_id\n  FROM react JOIN message USING(discord_id) JOIN emote ON(react.emote_id = emote.rowid)\n  WHERE time = (select time from max_time LIMIT 1)\n),\nlast_month_usage as (\n\tselect emote_row_id, SUM(num) as cnt from raw_usage JOIN max_time USING(time)\n\tgroup by emote_row_id\n),\nlast_month_react as (\n\tselect emote_row_id, COUNT(1) as cnt from raw_reacts JOIN max_time USING(time)\n\tgroup by emote_row_id\n)\nselect emote.emote as emote,\n\"data:image/png;base64,\" || emote.base64_encoded_image as img,\ncoalesce(r.cnt, 0) as react_count,\ncoalesce(u.cnt, 0) as message_count\nfrom emote\nFULL JOIN last_month_react r\nON emote.rowid = r.emote_row_id\nFULL JOIN last_month_usage u\nON emote.rowid = u.emote_row_id\nWHERE emote.rowid in active_emotes\nORDER BY react_count + message_count ASC\nLIMIT 100;\n\n",
+          "queryType": "table",
+          "rawQueryText": "\n--- least used past month\nWITH active_emotes as (\n  select emote_id as rowid from guild_emotes\n  where guild_id = 1083238120645992458\n),\nmax_time as (\n\tselect max(cast(strftime('%s', date(message.message_date, 'start of month')) as int)) as time from message \n),\nraw_usage as (\n  select\n  cast(strftime('%s', date(message.message_date, 'start of month')) as int) as time,\n  emote.rowid as emote_row_id,\n  num\n  FROM usage JOIN message USING(discord_id) JOIN emote ON(usage.emote_id = emote.rowid)\n  WHERE time = (select time from max_time LIMIT 1)\n),\nraw_reacts as (\n  select\n  cast(strftime('%s', date(message.message_date, 'start of month')) as int) as time,\n  emote.rowid as emote_row_id\n  FROM react JOIN message USING(discord_id) JOIN emote ON(react.emote_id = emote.rowid)\n  WHERE time = (select time from max_time LIMIT 1)\n),\nlast_month_usage as (\n\tselect emote_row_id, SUM(num) as cnt from raw_usage JOIN max_time USING(time)\n\tgroup by emote_row_id\n),\nlast_month_react as (\n\tselect emote_row_id, COUNT(1) as cnt from raw_reacts JOIN max_time USING(time)\n\tgroup by emote_row_id\n)\nselect emote.emote as emote,\n\"data:image/png;base64,\" || emote.base64_encoded_image as img,\ncoalesce(r.cnt, 0) as react_count,\ncoalesce(u.cnt, 0) as message_count\nfrom emote\nFULL JOIN last_month_react r\nON emote.rowid = r.emote_row_id\nFULL JOIN last_month_usage u\nON emote.rowid = u.emote_row_id\nWHERE emote.rowid in active_emotes\nORDER BY react_count + message_count ASC\nLIMIT 100;\n\n",
+          "refId": "A",
+          "timeColumns": [
+            "time",
+            "ts"
+          ]
+        }
+      ],
+      "title": "Least used in past month",
+      "type": "table"
+    }
+  ],
+  "refresh": "",
+  "schemaVersion": 39,
+  "tags": [],
+  "templating": {
+    "list": []
+  },
+  "time": {
+    "from": "now-1y",
+    "to": "now"
+  },
+  "timepicker": {},
+  "timezone": "browser",
+  "title": "emotes",
+  "uid": "fdhbbj7b5je9se",
+  "version": 32,
+  "weekStart": ""
+}
