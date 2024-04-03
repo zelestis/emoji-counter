@@ -10,3 +10,5 @@
 DB_FILE=/path/to/your/db.sqlite
 TOKEN=your-discord-bot-token
 ```
+
+You can see the dashboard at [https://zelestis.me/public-dashboards/94851abad577437cbf701b6823cd3d87](https://zelestis.me/public-dashboards/94851abad577437cbf701b6823cd3d87)
